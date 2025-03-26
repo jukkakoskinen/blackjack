@@ -15,6 +15,9 @@ SCREEN_WIDTH :: 320
 SCREEN_HEIGHT :: 240
 SCREEN_CENTER :: rl.Vector2{SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2}
 
+CARDS_PNG :: #load("../res/cards.png")
+DEAL_WAV :: #load("../res/deal.wav")
+
 Suit :: enum {
 	Heart,
 	Diamond,
@@ -68,11 +71,13 @@ Game_State :: union {
 }
 
 Game :: struct {
-	cards_texture: rl.Texture,
 	state:         Game_State,
 	deck:          [dynamic]Card,
 	player:        [dynamic]Table_Card,
 	dealer:        [dynamic]Table_Card,
+	//
+	cards_texture: rl.Texture,
+	deal_sound:    rl.Sound,
 }
 
 Text_Align :: enum {
@@ -83,10 +88,19 @@ Text_Align :: enum {
 
 create_game :: proc() -> Game {
 	game := Game {
-		cards_texture = rl.LoadTexture("./res/cards.png"),
-		deck          = make([dynamic]Card),
-		player        = make([dynamic]Table_Card),
-		dealer        = make([dynamic]Table_Card),
+		deck   = make([dynamic]Card),
+		player = make([dynamic]Table_Card),
+		dealer = make([dynamic]Table_Card),
+	}
+	{
+		cards_image := rl.LoadImageFromMemory(".png", raw_data(CARDS_PNG), i32(len(CARDS_PNG)))
+		defer rl.UnloadImage(cards_image)
+		game.cards_texture = rl.LoadTextureFromImage(cards_image)
+	}
+	{
+		deal_wave := rl.LoadWaveFromMemory(".wav", raw_data(DEAL_WAV), i32(len(DEAL_WAV)))
+		defer rl.UnloadWave(deal_wave)
+		game.deal_sound = rl.LoadSoundFromWave(deal_wave)
 	}
 	init_game(&game)
 	return game
@@ -114,10 +128,12 @@ init_game :: proc(game: ^Game) {
 }
 
 destroy_game :: proc(game: ^Game) {
-	rl.UnloadTexture(game.cards_texture)
 	delete(game.deck)
 	delete(game.player)
 	delete(game.dealer)
+
+	rl.UnloadTexture(game.cards_texture)
+	rl.UnloadSound(game.deal_sound)
 }
 
 card_texture_rect :: proc(card: Card, face_up: bool) -> rl.Rectangle {
@@ -139,6 +155,7 @@ deal_card :: proc(game: ^Game, hand: Hand, face_up: bool = true) {
 		tc.position = {SCREEN_CENTER.x - CARD_WIDTH / 2, -CARD_HEIGHT}
 		append(&game.dealer, tc)
 	}
+	rl.PlaySound(game.deal_sound)
 }
 
 rank_value :: proc(rank: Rank) -> int {
@@ -306,9 +323,11 @@ draw_game :: proc(game: Game) {
 
 main :: proc() {
 	rl.InitWindow(SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, "Blackjack")
-	rl.SetMouseScale(0.5, 0.5)
-	rl.SetTargetFPS(144)
 	defer rl.CloseWindow()
+	rl.SetTargetFPS(144)
+
+	rl.InitAudioDevice()
+	defer rl.CloseAudioDevice()
 
 	rt := rl.LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT)
 	rl.SetTextureFilter(rt.texture, rl.TextureFilter.POINT)
