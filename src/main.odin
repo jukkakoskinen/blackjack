@@ -211,10 +211,10 @@ update_game :: proc(game: ^Game, delta: f32) {
 				}
 				return
 			}
-			if rl.IsKeyPressed(rl.KeyboardKey.S) {
+			if rl.IsKeyPressed(.S) {
 				game.dealer[0].face_up = true
 				s.turn = .Dealer
-			} else if rl.IsKeyPressed(rl.KeyboardKey.H) {
+			} else if rl.IsKeyPressed(.H) {
 				deal_card(game, .Player)
 			}
 		case .Dealer:
@@ -243,7 +243,7 @@ update_game :: proc(game: ^Game, delta: f32) {
 			}
 		}
 	case Game_Over:
-		if rl.IsKeyPressed(rl.KeyboardKey.R) {
+		if rl.IsKeyPressed(.R) {
 			init_game(game)
 		}
 	}
@@ -330,7 +330,7 @@ main :: proc() {
 	defer rl.CloseAudioDevice()
 
 	rt := rl.LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT)
-	rl.SetTextureFilter(rt.texture, rl.TextureFilter.POINT)
+	rl.SetTextureFilter(rt.texture, .POINT)
 	defer rl.UnloadRenderTexture(rt)
 
 	game := create_game()
